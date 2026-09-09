@@ -57,7 +57,7 @@ function createWindow(): void {
   if (process.env.NODE_ENV === 'development' && process.env['ELECTRON_RENDERER_URL']) {
     mainWindow.loadURL(process.env['ELECTRON_RENDERER_URL'])
   } else {
-    mainWindow.loadURL('app://garage-app/index.html')
+    mainWindow.loadURL('app://lakmini-mobile/index.html')
   }
 }
 

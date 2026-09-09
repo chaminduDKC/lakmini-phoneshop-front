@@ -253,6 +253,7 @@ export const JobsPage: React.FC = () => {
       showToast('success', 'Part added to repair job')
       queryClient.invalidateQueries({ queryKey: ['jobs'] })
       queryClient.invalidateQueries({ queryKey: ['inventory'] })
+      queryClient.invalidateQueries({ queryKey: ['ledger'] })
       setSelectedJob(res.job)
       setShowAddPartForm(false)
       resetPartForm()
@@ -269,6 +270,7 @@ export const JobsPage: React.FC = () => {
       showToast('success', 'Part removed from job')
       queryClient.invalidateQueries({ queryKey: ['jobs'] })
       queryClient.invalidateQueries({ queryKey: ['inventory'] })
+      queryClient.invalidateQueries({ queryKey: ['ledger'] })
       setSelectedJob(res.job)
     },
     onError: (err: any) => {
@@ -677,7 +679,7 @@ export const JobsPage: React.FC = () => {
               resetCreateForm()
               setShowCreateModal(true)
             }}
-            className="flex items-center gap-2 px-4 py-2 bg-[var(--color-accent)] text-white font-semibold rounded-lg hover:bg-[var(--color-accent-hover)] transition-colors shadow-md text-sm"
+            className="flex items-center gap-2 px-4 py-2 bg-[var(--color-accent)] text-black font-semibold rounded-lg hover:bg-amber-400 transition-colors shadow-lg shadow-amber-500/20"
           >
             <Plus size={18} />
             <span>New Repair Job</span>
@@ -1151,7 +1153,6 @@ export const JobsPage: React.FC = () => {
                   className="p-3 rounded-lg bg-[var(--color-bg-secondary)] border border-amber-500/30 space-y-3"
                 >
                   <div className="flex items-center gap-3 text-xs">
-                    <span className="font-semibold text-[var(--color-text-secondary)]">Part Source:</span>
                     <label className="flex items-center gap-1.5 cursor-pointer">
                       <input
                         type="radio"
@@ -1524,7 +1525,7 @@ export const JobsPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={handleSaveWorkspaceDetails}
-                  disabled={updateJobMutation.isPending || (isJobLocked && isFormStillLocked)}
+                  disabled={updateJobMutation.isPending }
                   className="px-4 py-2 rounded bg-[var(--color-bg-secondary)] hover:bg-[var(--color-border)] text-white font-semibold text-xs transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   title={isJobLocked && isFormStillLocked ? 'Change status away from Paid/Completed to unlock and save' : undefined}
                 >
@@ -1534,7 +1535,7 @@ export const JobsPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={handleDeliverJob}
-                  disabled={deliverJobMutation.isPending || isJobLocked}
+                  disabled={deliverJobMutation.isPending}
                   className="px-5 py-2 rounded bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-white font-bold text-xs transition-colors shadow-lg shadow-amber-500/20 flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
                   title={isJobLocked ? 'This job is already completed and paid.' : undefined}
                 >

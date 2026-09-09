@@ -32,6 +32,7 @@ import {
   BusinessInfo
 } from '@renderer/api/sale'
 import { WarrantyBillModal } from '@renderer/components/WarrantyBillModal'
+import { ConfirmDialog } from '@renderer/components/ConfirmDialog'
 
 interface CartItem {
   itemId: string
@@ -62,6 +63,7 @@ export const SalesPage: React.FC = () => {
   const [showSaleModal, setShowSaleModal] = useState(false)
   const [activeBillSale, setActiveBillSale] = useState<Sale | null>(null)
   const [activeBusinessInfo, setActiveBusinessInfo] = useState<BusinessInfo | null>(null)
+  const [saleToDelete, setSaleToDelete] = useState<Sale | null>(null)
 
   // Filters
   const [search, setSearch] = useState('')
@@ -270,6 +272,21 @@ export const SalesPage: React.FC = () => {
     }
   })
 
+  const deleteSaleMutation = useMutation({
+    mutationFn: (id: string) => saleApi.deleteSale(id),
+    onSuccess: (res) => {
+      showToast('success', res.message || 'Sale deleted successfully')
+      queryClient.invalidateQueries({ queryKey: ['sales'] })
+      queryClient.invalidateQueries({ queryKey: ['inventory'] })
+      queryClient.invalidateQueries({ queryKey: ['ledger'] })
+      setSaleToDelete(null)
+    },
+    onError: (err: any) => {
+      showToast('error', err.response?.data?.message || 'Failed to delete sale')
+      setSaleToDelete(null)
+    }
+  })
+
   // Submit Sale Checkout
   const handleConfirmSale = (e: React.FormEvent) => {
     e.preventDefault()
@@ -410,14 +427,23 @@ export const SalesPage: React.FC = () => {
     {
       header: 'Actions',
       cell: ({ row }) => (
-        <button
-          onClick={() => handleViewBill(row.id)}
-          className="flex items-center gap-1 px-2.5 py-1 rounded bg-[var(--color-bg-primary)] hover:bg-[var(--color-border)] text-[var(--color-accent)] font-medium text-xs transition-colors"
-          title="Print / View Warranty Bill"
-        >
-          <Printer size={14} />
-          <span>Warranty Bill</span>
-        </button>
+        <div className="flex items-center gap-1.5">
+          <button
+            onClick={() => handleViewBill(row.id)}
+            className="flex items-center gap-1 px-2.5 py-1 rounded bg-[var(--color-bg-primary)] hover:bg-[var(--color-border)] text-[var(--color-accent)] font-medium text-xs transition-colors"
+            title="Print / View Warranty Bill"
+          >
+            <Printer size={14} />
+            <span>Warranty Bill</span>
+          </button>
+          <button
+            onClick={() => setSaleToDelete(row)}
+            className="p-1.5 rounded bg-[var(--color-bg-primary)] hover:bg-red-500/20 text-[var(--color-text-muted)] hover:text-red-400 transition-colors"
+            title="Delete Sale"
+          >
+            <Trash2 size={14} />
+          </button>
+        </div>
       )
     }
   ]
@@ -875,6 +901,22 @@ export const SalesPage: React.FC = () => {
         onClose={() => setActiveBillSale(null)}
         sale={activeBillSale}
         businessInfo={activeBusinessInfo}
+      />
+
+      {/* DELETE SALE CONFIRM DIALOG */}
+      <ConfirmDialog
+        isOpen={!!saleToDelete}
+        title="Delete Sale"
+        message={
+          saleToDelete
+            ? `Are you sure you want to delete invoice #${saleToDelete.invoiceNumber}? This will restore inventory stock and create a reversal ledger entry.`
+            : ''
+        }
+        confirmLabel="Delete"
+        onConfirm={() => saleToDelete && deleteSaleMutation.mutate(saleToDelete.id)}
+        onCancel={() => setSaleToDelete(null)}
+        isLoading={deleteSaleMutation.isPending}
+        variant="danger"
       />
     </div>
   )

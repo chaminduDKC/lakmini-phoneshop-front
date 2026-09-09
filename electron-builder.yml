@@ -1,5 +1,5 @@
-appId: com.ODPH.garage-management
-productName: ODPH Garage Manager
+appId: com.lakmini.garage-management
+productName: Lakmini Manager
 copyright: Software By Chamindu
 
 directories:
@@ -14,7 +14,7 @@ win:
     - target: nsis
       arch:
         - x64
-  icon: build/icon.ico
+  icon: build/logo.ico
 
 mac:
   target:
@@ -36,10 +36,10 @@ linux:
 nsis:
   oneClick: false
   allowToChangeInstallationDirectory: true
-  installerIcon: build/icon.ico
-  uninstallerIcon: build/icon.ico
+  installerIcon: build/logo.ico
+  uninstallerIcon: build/logo.ico
 
 publish:
   provider: github
   owner: chamindudkc
-  repo: garage-management-system
+  repo: lakmini-mobile-management-system

@@ -1,5 +1,5 @@
 {
-  "name": "Lakmini Mobile",
+  "name": "lakminimobile",
   "version": "1.0.0",
   "description": "Lakmini Mobile Management System Desktop App",
   "main": "./out/main/index.js",
@@ -41,7 +41,7 @@
   },
   "build": {
     "win": {
-      "icon": "build/icon.ico"
+      "icon": "build/logo.ico"
     }
   }
 }

@@ -25,7 +25,7 @@ interface DataTableProps<T> {
   pagination?: PaginationState
 }
 
-const PAGE_SIZE_OPTIONS = [10, 15, 25, 50]
+const PAGE_SIZE_OPTIONS = [8, 15, 25, 50]
 
 export function DataTable<T>({
   columns,

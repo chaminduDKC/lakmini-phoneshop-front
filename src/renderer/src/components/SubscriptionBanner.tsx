@@ -11,7 +11,7 @@ export const SubscriptionBanner: React.FC = () => {
   const { data } = useQuery({
     queryKey: ['account-status'],
     queryFn: accountApi.get,
-    refetchInterval: 60000, // Re-check every 60 seconds
+    refetchInterval: 43200000, // Re-check every 12 hrs
   })
 
   const account = data?.data

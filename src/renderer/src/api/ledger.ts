@@ -6,6 +6,7 @@ export type LedgerEntryType =
   | "PURCHASE"
   | "PURCHASE_REVERSAL"
   | "SALE"
+  | "SALE_REVERSAL"
   | "REPAIR"
   | "REPAIR_REVERSAL"
   | "EXTERNAL_PART"

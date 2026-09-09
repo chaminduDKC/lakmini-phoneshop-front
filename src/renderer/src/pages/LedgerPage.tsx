@@ -53,6 +53,12 @@ const TYPE_META: Record<
     colorClass: "text-emerald-400",
     bg: "bg-emerald-500/10 border-emerald-500/20"
   },
+  SALE_REVERSAL: {
+    label: "Sale Reversal",
+    icon: <RotateCcw size={13} />,
+    colorClass: "text-orange-400",
+    bg: "bg-orange-500/10 border-orange-500/20"
+  },
   REPAIR: {
     label: "Repair",
     icon: <Wrench size={13} />,
@@ -275,7 +281,7 @@ export const LedgerPage: React.FC = () => {
       header: "",
       accessorKey: "id",
       cell: ({ row }) => {
-        const autoTypes = ["PURCHASE", "PURCHASE_REVERSAL", "SALE", "REPAIR", "REPAIR_REVERSAL", "EXTERNAL_PART", "EXTERNAL_PART_REVERSAL"]
+        const autoTypes = ["PURCHASE", "PURCHASE_REVERSAL", "SALE", "SALE_REVERSAL", "REPAIR", "REPAIR_REVERSAL", "EXTERNAL_PART", "EXTERNAL_PART_REVERSAL"]
         if (autoTypes.includes(row.type)) return null
         return (
           <button
@@ -382,6 +388,7 @@ export const LedgerPage: React.FC = () => {
             <option value="PURCHASE">Purchase</option>
             <option value="PURCHASE_REVERSAL">Purchase Reversal</option>
             <option value="SALE">Sale</option>
+            <option value="SALE_REVERSAL">Sale Reversal</option>
             <option value="REPAIR">Repair</option>
             <option value="REPAIR_REVERSAL">Repair Reversal</option>
             <option value="EXTERNAL_PART">External Part Cost (Debit)</option>

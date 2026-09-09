@@ -1,4 +1,4 @@
-﻿import { apiClient } from "./client"
+import { apiClient } from "./client"
 import { PaginatedResponse, PaginationParams } from "./paginated"
 
 export interface SaleItemDetail {
@@ -99,5 +99,10 @@ export const saleApi = {
   }> => {
     const response = await apiClient.post("/sales", data)
     return response.data
+  },
+  deleteSale: async (id: string): Promise<{ success: boolean; message: string }> => {
+    const response = await apiClient.delete<{ success: boolean; message: string }>(`/sales/${id}`)
+    return response.data
   }
 }
+

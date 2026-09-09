@@ -190,7 +190,7 @@ export const InventoryPage: React.FC = () => {
         action={
           <button
             onClick={() => navigate('/purchases')}
-            className="flex items-center gap-2 px-4 py-2 bg-[var(--color-accent)] text-white font-semibold rounded-lg hover:bg-[var(--color-accent-hover)] transition-colors shadow-md text-sm"
+            className="flex items-center gap-2 px-4 py-2 bg-[var(--color-accent)] text-black font-semibold rounded-lg hover:bg-amber-400 transition-colors shadow-lg shadow-amber-500/20"
           >
             <ShoppingCart size={18} />
             <span>Purchase Stock</span>
