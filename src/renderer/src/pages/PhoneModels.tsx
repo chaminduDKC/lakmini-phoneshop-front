@@ -116,7 +116,7 @@ export const PhoneModels: React.FC = () => {
   })
 
   const deleteMutation = useMutation({
-    mutationFn: (id: string) => phoneApi.deletePhone(id),
+    mutationFn: (id: string) => phoneApi.deleteModel(id),
     onSuccess: () => {
       showToast('success', 'Phone model deleted')
       queryClient.invalidateQueries({ queryKey: ['phones'] })
@@ -398,7 +398,7 @@ export const PhoneModels: React.FC = () => {
       <ConfirmDialog
         isOpen={!!deleteBrandTarget}
         onClose={() => setDeleteBrandTarget(null)}
-        onConfirm={() => {
+        onConfirm={() => { 
           if (deleteBrandTarget) deleteBrandMutation.mutate(deleteBrandTarget.brand)
         }}
         title="Delete Phone Brand"

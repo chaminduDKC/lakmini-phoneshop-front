@@ -162,7 +162,7 @@ export const CategoryAndAttributes: React.FC = () => {
   }
 
   const handleSave = () => {
-    if (!categoryName.trim() || attributes.length === 0) return
+    if (!categoryName.trim()) return
     if (editingId) {
       updateCategoryMutation.mutate()
     } else {
@@ -189,19 +189,23 @@ export const CategoryAndAttributes: React.FC = () => {
       header: 'Custom Attributes & Form Fields',
       cell: ({ row }) => (
         <div className="flex flex-wrap gap-1.5 py-1">
-          {row.attributes.map((attr: any) => (
-            <span
-              key={attr.id}
-              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium bg-[var(--color-bg-primary)] border border-[var(--color-border)] text-[var(--color-text-primary)]"
-            >
-              <span className="font-semibold text-white">{attr.name}</span>
-              {attr.inputType === 'DROPDOWN' && attr.options?.length > 0 ? (
-                <span className="text-[var(--color-text-muted)]">({attr.options.length} options)</span>
-              ) : (
-                <span className="text-[var(--color-text-muted)] text-[11px] italic">({attr.inputType.toLowerCase()})</span>
-              )}
-            </span>
-          ))}
+          {row.attributes && row.attributes.length > 0 ? (
+            row.attributes.map((attr: any) => (
+              <span
+                key={attr.id}
+                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium bg-[var(--color-bg-primary)] border border-[var(--color-border)] text-[var(--color-text-primary)]"
+              >
+                <span className="font-semibold text-white">{attr.name}</span>
+                {attr.inputType === 'DROPDOWN' && attr.options?.length > 0 ? (
+                  <span className="text-[var(--color-text-muted)]">({attr.options.length} options)</span>
+                ) : (
+                  <span className="text-[var(--color-text-muted)] text-[11px] italic">({attr.inputType.toLowerCase()})</span>
+                )}
+              </span>
+            ))
+          ) : (
+            <span className="text-xs text-[var(--color-text-muted)] italic">No attributes (Simple Category)</span>
+          )}
         </div>
       )
     },
@@ -461,14 +465,16 @@ export const CategoryAndAttributes: React.FC = () => {
             <button
               type="button"
               onClick={handleSave}
-              disabled={!categoryName.trim() || attributes.length === 0 || isSubmitting}
+              disabled={!categoryName.trim() || isSubmitting}
              className="px-5 py-2 rounded bg-[var(--color-accent)] hover:bg-amber-400 text-black font-bold text-xs transition-colors shadow-lg shadow-amber-500/20 flex items-center gap-1.5"
             >
               {isSubmitting
                 ? 'Saving...'
                 : editingId
                 ? 'Update Category'
-                : `Save Category (${attributes.length} fields)`}
+                : attributes.length > 0
+                ? `Save Category (${attributes.length} fields)`
+                : 'Save Category'}
             </button>
           </div>
         </div>

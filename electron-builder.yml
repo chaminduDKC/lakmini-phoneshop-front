@@ -1,5 +1,5 @@
-appId: com.lakmini.garage-management
-productName: Lakmini Manager
+appId: com.lakmini.mobile-management
+productName: Lakmini Mobile Manager
 copyright: Software By Chamindu
 
 directories:
@@ -14,7 +14,7 @@ win:
     - target: nsis
       arch:
         - x64
-  icon: build/logo.ico
+  icon: build/logo.png
 
 mac:
   target:
@@ -36,8 +36,8 @@ linux:
 nsis:
   oneClick: false
   allowToChangeInstallationDirectory: true
-  installerIcon: build/logo.ico
-  uninstallerIcon: build/logo.ico
+  installerIcon: build/logo.png
+  uninstallerIcon: build/logo.png
 
 publish:
   provider: github

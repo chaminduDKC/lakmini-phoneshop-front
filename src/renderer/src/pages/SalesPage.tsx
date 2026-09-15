@@ -260,7 +260,9 @@ export const SalesPage: React.FC = () => {
       showToast('success', res.message || 'Sale completed successfully')
       queryClient.invalidateQueries({ queryKey: ['sales'] })
       queryClient.invalidateQueries({ queryKey: ['inventory'] })
-      queryClient.invalidateQueries({ queryKey: ['customers'] })
+      if(customerMode === "new"){
+        queryClient.invalidateQueries({ queryKey: ['customers-all'] })
+      }
       setShowSaleModal(false)
       resetSaleForm()
       // Open Warranty Bill Modal immediately
@@ -913,6 +915,7 @@ export const SalesPage: React.FC = () => {
             : ''
         }
         confirmLabel="Delete"
+        onClose={()=> setSaleToDelete(null)}
         onConfirm={() => saleToDelete && deleteSaleMutation.mutate(saleToDelete.id)}
         onCancel={() => setSaleToDelete(null)}
         isLoading={deleteSaleMutation.isPending}

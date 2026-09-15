@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react'
-import { Plus, ShoppingCart, Search, Eye, Filter, RefreshCw, CheckCircle, AlertCircle, Building2, Smartphone, DollarSign, Package, Edit, Trash2 } from 'lucide-react'
+import { Plus, ShoppingCart, Search, Eye, Filter, RefreshCw, CheckCircle, AlertCircle, Building2, Smartphone, DollarSign, Package, Edit, Trash2, Layers, X, Sliders, Tag } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { PageHeader } from '@renderer/components/PageHeader'
 import { Modal } from '@renderer/components/Modal'
@@ -42,6 +42,19 @@ export const PurchasesPage: React.FC = () => {
   const [showSupplierModal, setShowSupplierModal] = useState(false)
   const [selectedPurchaseDetails, setSelectedPurchaseDetails] = useState<Purchase | null>(null)
   const [purchaseToDelete, setPurchaseToDelete] = useState<Purchase | null>(null)
+
+  // Quick Custom Category Form State
+  const [showCategoryModal, setShowCategoryModal] = useState(false)
+  const [newCatName, setNewCatName] = useState('')
+  const [newCatAttributes, setNewCatAttributes] = useState<
+    { name: string; inputType: 'DROPDOWN' | 'TEXT' | 'NUMBER' | 'LINKED_LIST'; options?: string[] }[]
+  >([])
+  const [showAttrBuilder, setShowAttrBuilder] = useState(false)
+  const [newAttrName, setNewAttrName] = useState('')
+  const [newAttrType, setNewAttrType] = useState<'DROPDOWN' | 'TEXT' | 'NUMBER' | 'LINKED_LIST'>('DROPDOWN')
+  const [newPendingOptions, setNewPendingOptions] = useState<string[]>([])
+  const [newOptionInput, setNewOptionInput] = useState('')
+  const [newCatError, setNewCatError] = useState('')
 
   // Edit Purchase State
   const [editingPurchase, setEditingPurchase] = useState<Purchase | null>(null)
@@ -272,6 +285,7 @@ export const PurchasesPage: React.FC = () => {
     onSuccess: (res) => {
       showToast('Supplier added successfully', 'success')
       queryClient.invalidateQueries({ queryKey: ['suppliers'] })
+      queryClient.invalidateQueries({ queryKey: ['suppliers-all'] })
       setSelectedSupplierId(res.supplier.id)
       setShowSupplierModal(false)
       setNewSupName('')
@@ -284,6 +298,82 @@ export const PurchasesPage: React.FC = () => {
       showToast(msg, 'error')
     }
   })
+
+  const createCategoryMutation = useMutation({
+    mutationFn: (data: { categoryName: string; attributes: any[] }) =>
+      categoryApi.createCategory(data),
+    onSuccess: (res) => {
+      showToast(res.message || 'Category created successfully', 'success')
+      queryClient.setQueryData(['categories-all'], (old: any) => {
+        if (!old?.data) return old
+        return {
+          ...old,
+          data: [...old.data, res.category]
+        }
+      })
+      queryClient.invalidateQueries({ queryKey: ['categories'] })
+      queryClient.invalidateQueries({ queryKey: ['categories-all'] })
+      handleCategoryChange(res.category.id)
+      setShowCategoryModal(false)
+      setNewCatName('')
+      setNewCatAttributes([])
+      setShowAttrBuilder(false)
+      setNewAttrName('')
+      setNewAttrType('DROPDOWN')
+      setNewPendingOptions([])
+      setNewOptionInput('')
+      setNewCatError('')
+    },
+    onError: (err: any) => {
+      const msg = err.response?.data?.message || err.message || 'Failed to create category'
+      showToast(msg, 'error')
+    }
+  })
+
+  const handleAddNewCatOption = () => {
+    const trimmed = newOptionInput.trim()
+    if (trimmed && !newPendingOptions.includes(trimmed)) {
+      setNewPendingOptions((prev) => [...prev, trimmed])
+      setNewOptionInput('')
+    }
+  }
+
+  const handleRemoveNewCatOption = (idx: number) => {
+    setNewPendingOptions((prev) => prev.filter((_, i) => i !== idx))
+  }
+
+  const handleAddNewCatAttribute = () => {
+    if (!newAttrName.trim()) return
+    setNewCatAttributes((prev) => [
+      ...prev,
+      {
+        name: newAttrName.trim(),
+        inputType: newAttrType,
+        options: newAttrType === 'DROPDOWN' ? newPendingOptions : undefined
+      }
+    ])
+    setNewAttrName('')
+    setNewAttrType('DROPDOWN')
+    setNewPendingOptions([])
+    setNewOptionInput('')
+  }
+
+  const handleRemoveNewCatAttribute = (idx: number) => {
+    setNewCatAttributes((prev) => prev.filter((_, i) => i !== idx))
+  }
+
+  const handleSaveCustomCategory = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!newCatName.trim()) {
+      setNewCatError('Category name is required')
+      return
+    }
+    setNewCatError('')
+    createCategoryMutation.mutate({
+      categoryName: newCatName.trim(),
+      attributes: newCatAttributes
+    })
+  }
 
   const updatePurchaseMutation = useMutation({
     mutationFn: (data: { id: string; payload: UpdatePurchasePayload }) =>
@@ -647,9 +737,28 @@ export const PurchasesPage: React.FC = () => {
 
           {/* Category Section */}
           <div>
-            <label className="block mb-1 text-sm font-medium text-[var(--color-text-secondary)]">
-              Category <span className="text-amber-500">*</span>
-            </label>
+            <div className="flex items-center justify-between mb-1">
+              <label className="text-sm font-medium text-[var(--color-text-secondary)]">
+                Category <span className="text-amber-500">*</span>
+              </label>
+              <button
+                type="button"
+                onClick={() => {
+                  setNewCatName('')
+                  setNewCatAttributes([])
+                  setShowAttrBuilder(false)
+                  setNewAttrName('')
+                  setNewAttrType('DROPDOWN')
+                  setNewPendingOptions([])
+                  setNewOptionInput('')
+                  setNewCatError('')
+                  setShowCategoryModal(true)
+                }}
+                className="text-xs text-[var(--color-accent)] hover:underline flex items-center gap-1 font-medium"
+              >
+                <Plus size={13} /> Add Custom Category
+              </button>
+            </div>
             <select
               value={selectedCategoryId}
               onChange={(e) => handleCategoryChange(e.target.value)}
@@ -1025,6 +1134,222 @@ export const PurchasesPage: React.FC = () => {
               className="px-5 py-2 rounded-lg bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-white font-semibold text-xs transition-colors shadow-md disabled:opacity-50"
             >
               {createSupplierMutation.isPending ? 'Adding...' : 'Save Supplier'}
+            </button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* QUICK ADD CUSTOM CATEGORY MODAL */}
+      <Modal
+        isOpen={showCategoryModal}
+        onClose={() => setShowCategoryModal(false)}
+        title="Add Custom Category"
+        size="md"
+        marginTop="0"
+      >
+        <form onSubmit={handleSaveCustomCategory} className="space-y-4">
+          <div className="p-4 rounded-lg bg-[var(--color-bg-primary)] border border-[var(--color-border)] space-y-4">
+            <div>
+              <label className="block mb-1 text-xs font-semibold text-[var(--color-text-secondary)] uppercase">
+                Category Name <span className="text-amber-500">*</span>
+              </label>
+              <input
+                autoFocus
+                type="text"
+                value={newCatName}
+                onChange={(e) => {
+                  setNewCatName(e.target.value)
+                  if (newCatError) setNewCatError('')
+                }}
+                placeholder="e.g. Back Covers, Tempered Glass, Cables..."
+                className={`w-full bg-[var(--color-bg-secondary)] border ${
+                  newCatError ? 'border-red-500' : 'border-[var(--color-border)]'
+                } focus:border-[var(--color-accent)] rounded-md px-3 py-2 text-sm text-white focus:outline-none`}
+              />
+              {newCatError && (
+                <span className="text-xs text-red-500 mt-1 block">{newCatError}</span>
+              )}
+            </div>
+
+            {/* Optional Attributes Section */}
+            <div className="pt-2 border-t border-[var(--color-border)]">
+              <div className="flex items-center justify-between mb-2">
+                <div>
+                  <span className="text-xs font-semibold text-[var(--color-text-secondary)] uppercase flex items-center gap-1.5">
+                    <Sliders size={14} className="text-[var(--color-accent)]" />
+                    Custom Attributes <span className="text-xs font-normal text-[var(--color-text-muted)]">(Optional)</span>
+                  </span>
+                  <p className="text-[11px] text-[var(--color-text-muted)] mt-0.5">
+                    Define custom specs (e.g. Brand, Color, Capacity) for items in this category.
+                  </p>
+                </div>
+                {!showAttrBuilder && (
+                  <button
+                    type="button"
+                    onClick={() => setShowAttrBuilder(true)}
+                    className="text-xs text-[var(--color-accent)] hover:underline flex items-center gap-1 font-medium"
+                  >
+                    <Plus size={13} /> Add Attribute
+                  </button>
+                )}
+              </div>
+
+              {/* Added Attributes List */}
+              {newCatAttributes.length > 0 && (
+                <div className="flex flex-wrap gap-2 mb-3">
+                  {newCatAttributes.map((attr, idx) => (
+                    <span
+                      key={idx}
+                      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-[var(--color-bg-secondary)] border border-[var(--color-border)] text-white"
+                    >
+                      <Tag size={12} className="text-[var(--color-accent)]" />
+                      <span>{attr.name}</span>
+                      <span className="text-[10px] text-[var(--color-text-muted)]">
+                        ({attr.inputType === 'LINKED_LIST' ? 'Phone Model' : attr.inputType.toLowerCase()})
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveNewCatAttribute(idx)}
+                        className="text-red-400 hover:text-red-300 ml-1"
+                      >
+                        <X size={12} />
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
+
+              {/* Attribute Builder Form */}
+              {showAttrBuilder && (
+                <div className="p-3 rounded-lg bg-[var(--color-bg-secondary)] border border-[var(--color-border)] space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-semibold text-[var(--color-accent)]">
+                      New Attribute Field
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setShowAttrBuilder(false)}
+                      className="text-xs text-[var(--color-text-muted)] hover:text-white"
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <div>
+                      <label className="block mb-1 text-[11px] font-medium text-[var(--color-text-secondary)]">
+                        Attribute Name
+                      </label>
+                      <input
+                        type="text"
+                        value={newAttrName}
+                        onChange={(e) => setNewAttrName(e.target.value)}
+                        placeholder="e.g. Color, Wattage, Type"
+                        className="w-full bg-[var(--color-bg-primary)] border border-[var(--color-border)] focus:border-[var(--color-accent)] rounded px-2.5 py-1.5 text-xs text-white focus:outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block mb-1 text-[11px] font-medium text-[var(--color-text-secondary)]">
+                        Field Type
+                      </label>
+                      <select
+                        value={newAttrType}
+                        onChange={(e) => setNewAttrType(e.target.value as any)}
+                        className="w-full bg-[var(--color-bg-primary)] border border-[var(--color-border)] focus:border-[var(--color-accent)] rounded px-2.5 py-1.5 text-xs text-white focus:outline-none"
+                      >
+                        <option value="DROPDOWN">Dropdown List</option>
+                        <option value="TEXT">Free Text</option>
+                        <option value="NUMBER">Number</option>
+                        <option value="LINKED_LIST">Linked to Phone Model</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  {newAttrType === 'DROPDOWN' && (
+                    <div className="space-y-2">
+                      <label className="block text-[11px] font-medium text-[var(--color-text-secondary)]">
+                        Dropdown Options
+                      </label>
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          value={newOptionInput}
+                          onChange={(e) => setNewOptionInput(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault()
+                              handleAddNewCatOption()
+                            }
+                          }}
+                          placeholder="Type option & press Enter"
+                          className="flex-1 bg-[var(--color-bg-primary)] border border-[var(--color-border)] focus:border-[var(--color-accent)] rounded px-2.5 py-1.5 text-xs text-white focus:outline-none"
+                        />
+                        <button
+                          type="button"
+                          onClick={handleAddNewCatOption}
+                          className="px-2.5 py-1.5 rounded bg-[var(--color-bg-primary)] hover:bg-[var(--color-border)] text-xs text-[var(--color-accent)] font-medium"
+                        >
+                          + Add
+                        </button>
+                      </div>
+                      {newPendingOptions.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5 pt-1">
+                          {newPendingOptions.map((opt, i) => (
+                            <span
+                              key={i}
+                              className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] bg-[var(--color-bg-primary)] border border-[var(--color-border)] text-white"
+                            >
+                              <span>{opt}</span>
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveNewCatOption(i)}
+                                className="text-red-400 hover:text-red-300"
+                              >
+                                <X size={10} />
+                              </button>
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {newAttrType === 'LINKED_LIST' && (
+                    <p className="text-[11px] text-[var(--color-text-muted)] italic">
+                      Will automatically show Phone Brand & Phone Model selection dropdowns during purchase.
+                    </p>
+                  )}
+
+                  <div className="flex justify-end pt-1">
+                    <button
+                      type="button"
+                      disabled={!newAttrName.trim()}
+                      onClick={handleAddNewCatAttribute}
+                      className="px-3 py-1 rounded bg-[var(--color-accent)] hover:bg-amber-400 text-black font-semibold text-xs transition-colors disabled:opacity-50"
+                    >
+                      Add This Attribute
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-3 pt-3 border-t border-[var(--color-border)]">
+            <button
+              type="button"
+              onClick={() => setShowCategoryModal(false)}
+              className="px-4 py-2 rounded bg-[var(--color-bg-primary)] hover:bg-[var(--color-border)] text-[var(--color-text-secondary)] font-medium text-xs transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={createCategoryMutation.isPending}
+              className="px-5 py-2 rounded-lg bg-[var(--color-accent)] hover:bg-amber-400 text-black font-semibold text-xs transition-colors shadow-md disabled:opacity-50 flex items-center gap-1.5"
+            >
+              <Layers size={14} />
+              <span>{createCategoryMutation.isPending ? 'Saving...' : 'Save Category'}</span>
             </button>
           </div>
         </form>

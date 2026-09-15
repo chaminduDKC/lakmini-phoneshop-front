@@ -24,8 +24,17 @@ export const phoneApi = {
     >("/phones", { params })
     return response.data
   },
-  deletePhone: async (id: string): Promise<any> => {
+  deleteModel: async (id: string): Promise<any> => {
+    console.log("Model");
+    console.log(id);
+    
     const response = await apiClient.delete(`/phones/${id}`)
+    return response.data
+  },
+  deleteBrand: async (brand: string): Promise<any> => {
+    console.log("Brand");
+      
+    const response = await apiClient.delete(`/phones/brand/${brand}`)
     return response.data
   }
 }

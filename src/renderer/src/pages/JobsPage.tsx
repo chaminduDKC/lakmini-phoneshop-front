@@ -239,6 +239,7 @@ export const JobsPage: React.FC = () => {
     onSuccess: (res) => {
       showToast('success', 'Repair job updated')
       queryClient.invalidateQueries({ queryKey: ['jobs'] })
+       queryClient.invalidateQueries({ queryKey: ['ledger'] })
       setSelectedJob(res.job)
     },
     onError: (err: any) => {
@@ -284,6 +285,7 @@ export const JobsPage: React.FC = () => {
     onSuccess: (res) => {
       showToast('success', 'Job marked as DELIVERED & bill generated')
       queryClient.invalidateQueries({ queryKey: ['jobs'] })
+       queryClient.invalidateQueries({ queryKey: ['ledger'] })
       setSelectedJob(null)
       setActiveBillJob(res.data.job)
       setActiveBusinessInfo(res.data.businessInfo || null)
@@ -1138,7 +1140,7 @@ export const JobsPage: React.FC = () => {
                   type="button"
                   disabled={isJobLocked}
                   onClick={() => setShowAddPartForm(!showAddPartForm)}
-                  className="px-2.5 py-1 bg-amber-500/10 hover:bg-amber-500/20 text-[var(--color-accent)] rounded text-xs font-semibold flex items-center gap-1 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                  className="px-2.5 py-1 text-[var(--color-accent)] rounded text-xs font-semibold flex items-center gap-1 hover:cursor-pointer transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                   title={isJobLocked ? 'Cannot add parts to a completed & paid job. Revert status first.' : undefined}
                 >
                   <Plus size={13} />
