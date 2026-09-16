@@ -1,5 +1,5 @@
-import React, { useState } from 'react'
-import { Users, Plus, Search, Edit, Trash2, Phone, Mail, MapPin, UserCheck } from 'lucide-react'
+import React, { useState, useEffect } from 'react'
+import { Users, Plus, Search, Edit, Trash2, Phone, Mail, MapPin } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { PageHeader } from '@renderer/components/PageHeader'
 import { DataTable, Column } from '@renderer/components/DataTable'
@@ -12,6 +12,7 @@ export const CustomersPage: React.FC = () => {
   const { showToast } = useToast()
   const queryClient = useQueryClient()
 
+  const [searchInput, setSearchInput] = useState('')
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
   const [limit, setLimit] = useState(15)
@@ -25,9 +26,25 @@ export const CustomersPage: React.FC = () => {
   const [email, setEmail] = useState('')
   const [address, setAddress] = useState('')
 
-  const { data: responseData, isLoading } = useQuery({
+  // Debounce search input -> actual query param
+  useEffect(() => {
+    const t = setTimeout(() => {
+      setSearch(searchInput)
+      setPage(1)
+    }, 600)
+    return () => clearTimeout(t)
+  }, [searchInput])
+
+  const {
+    data: responseData,
+    isLoading,
+    isError,
+    error
+  } = useQuery({
     queryKey: ['customers', search, page, limit],
-    queryFn: () => customerApi.listCustomers({ search: search || undefined, page, limit })
+    queryFn: () => customerApi.listCustomers({ search: search || undefined, page, limit }),
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false
   })
 
   const customers = responseData?.data ?? []
@@ -38,7 +55,10 @@ export const CustomersPage: React.FC = () => {
         total: responseData.total,
         totalPages: responseData.totalPages,
         onPageChange: (p: number) => setPage(p),
-        onLimitChange: (l: number) => setLimit(l)
+        onLimitChange: (l: number) => {
+          setLimit(l)
+          setPage(1)
+        }
       }
     : undefined
 
@@ -145,20 +165,28 @@ export const CustomersPage: React.FC = () => {
     {
       header: 'Email Address',
       accessorKey: 'email',
-      cell: ({ value }) => (
-        <span className="text-xs text-[var(--color-text-secondary)]">
-          {value || '-'}
-        </span>
-      )
+      cell: ({ value }) =>
+        value ? (
+          <div className="flex items-center gap-1.5 text-xs text-[var(--color-text-secondary)]">
+            <Mail size={13} className="text-[var(--color-text-muted)]" />
+            <span>{value}</span>
+          </div>
+        ) : (
+          <span className="text-xs text-[var(--color-text-secondary)]">-</span>
+        )
     },
     {
       header: 'Address / Location',
       accessorKey: 'address',
-      cell: ({ value }) => (
-        <span className="text-xs text-[var(--color-text-secondary)] truncate max-w-xs block">
-          {value || '-'}
-        </span>
-      )
+      cell: ({ value }) =>
+        value ? (
+          <div className="flex items-center gap-1.5 text-xs text-[var(--color-text-secondary)] max-w-xs">
+            <MapPin size={13} className="text-[var(--color-text-muted)] shrink-0" />
+            <span className="truncate">{value}</span>
+          </div>
+        ) : (
+          <span className="text-xs text-[var(--color-text-secondary)]">-</span>
+        )
     },
     {
       header: 'Sales Orders',
@@ -219,15 +247,18 @@ export const CustomersPage: React.FC = () => {
           <input
             type="text"
             placeholder="Search customers by name, phone, or email..."
-            value={search}
-            onChange={(e) => {
-              setSearch(e.target.value)
-              setPage(1)
-            }}
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
             className="w-full pl-10 pr-4 py-2 bg-[var(--color-bg-primary)] border border-[var(--color-border)] rounded-lg text-sm text-white placeholder-[var(--color-text-muted)] focus:outline-none focus:border-[var(--color-accent)]"
           />
         </div>
       </div>
+
+      {isError && (
+        <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 text-sm">
+          Failed to load customers{error instanceof Error ? `: ${error.message}` : '.'} Please try again.
+        </div>
+      )}
 
       <DataTable
         columns={columns}

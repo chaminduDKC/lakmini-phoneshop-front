@@ -270,6 +270,9 @@ export const PurchasesPage: React.FC = () => {
       showToast(res.message || 'Purchase recorded successfully', 'success')
       queryClient.invalidateQueries({ queryKey: ['purchases'] })
       queryClient.invalidateQueries({ queryKey: ['inventory'] })
+      queryClient.invalidateQueries({ queryKey: ['ledger'] })
+      queryClient.invalidateQueries({ queryKey: ['ledger-summary'] })
+      queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] })
       setShowPurchaseModal(false)
       resetForm()
     },
@@ -383,6 +386,8 @@ export const PurchasesPage: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['purchases'] })
       queryClient.invalidateQueries({ queryKey: ['inventory'] })
       queryClient.invalidateQueries({ queryKey: ['ledger'] })
+      queryClient.invalidateQueries({ queryKey: ['ledger-summary'] })
+      queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] })
       setEditingPurchase(null)
       if (selectedPurchaseDetails?.id === res.data.id) {
         setSelectedPurchaseDetails(res.data)
@@ -401,6 +406,8 @@ export const PurchasesPage: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['purchases'] })
       queryClient.invalidateQueries({ queryKey: ['inventory'] })
       queryClient.invalidateQueries({ queryKey: ['ledger'] })
+      queryClient.invalidateQueries({ queryKey: ['ledger-summary'] })
+      queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] })
       setPurchaseToDelete(null)
       if (selectedPurchaseDetails?.id === purchaseToDelete?.id) {
         setSelectedPurchaseDetails(null)

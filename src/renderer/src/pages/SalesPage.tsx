@@ -260,6 +260,9 @@ export const SalesPage: React.FC = () => {
       showToast('success', res.message || 'Sale completed successfully')
       queryClient.invalidateQueries({ queryKey: ['sales'] })
       queryClient.invalidateQueries({ queryKey: ['inventory'] })
+      queryClient.invalidateQueries({ queryKey: ['ledger'] })
+      queryClient.invalidateQueries({ queryKey: ['ledger-summary'] })
+      queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] })
       if(customerMode === "new"){
         queryClient.invalidateQueries({ queryKey: ['customers-all'] })
       }
@@ -281,6 +284,8 @@ export const SalesPage: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['sales'] })
       queryClient.invalidateQueries({ queryKey: ['inventory'] })
       queryClient.invalidateQueries({ queryKey: ['ledger'] })
+      queryClient.invalidateQueries({ queryKey: ['ledger-summary'] })
+      queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] })
       setSaleToDelete(null)
     },
     onError: (err: any) => {

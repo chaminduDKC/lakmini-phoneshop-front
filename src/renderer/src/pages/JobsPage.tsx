@@ -133,7 +133,10 @@ export const JobsPage: React.FC = () => {
         status: selectedStatusTab !== 'ALL' ? selectedStatusTab : undefined,
         page,
         limit
-      })
+      }),
+      refetchOnWindowFocus: false,   // don't refetch when tab regains focus
+      refetchOnReconnect: false,     // don't refetch when network reconnects
+      refetchOnMount: false,  // don't refetch when component remounts (uses cache if fresh)
   })
 
   const jobs = responseData?.data ?? []
@@ -150,13 +153,19 @@ export const JobsPage: React.FC = () => {
 
   const { data: customersData } = useQuery({
     queryKey: ['customers-all'],
-    queryFn: () => customerApi.listCustomers({ all: true })
+    queryFn: () => customerApi.listCustomers({ all: true }),
+    refetchOnWindowFocus: false,   // don't refetch when tab regains focus
+      refetchOnReconnect: false,     // don't refetch when network reconnects
+      refetchOnMount: false,  // don't refetch when component remounts (uses cache if fresh)
   })
   const customers: Customer[] = customersData?.data ?? []
 
   const { data: inventoryData } = useQuery({
     queryKey: ['inventory-all'],
-    queryFn: () => inventoryApi.listInventory({ all: true })
+    queryFn: () => inventoryApi.listInventory({ all: true }),
+    refetchOnWindowFocus: false,   // don't refetch when tab regains focus
+      refetchOnReconnect: false,     // don't refetch when network reconnects
+      refetchOnMount: false,  // don't refetch when component remounts (uses cache if fresh)
   })
   const inventory: InventoryItem[] = inventoryData?.data ?? []
 
@@ -225,6 +234,9 @@ export const JobsPage: React.FC = () => {
       showToast('success', res.message || 'Repair job registered successfully')
       queryClient.invalidateQueries({ queryKey: ['jobs'] })
       queryClient.invalidateQueries({ queryKey: ['customers'] })
+      queryClient.invalidateQueries({ queryKey: ['ledger-summary'] })
+      queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] })
+
       setShowCreateModal(false)
       resetCreateForm()
     },
@@ -240,6 +252,9 @@ export const JobsPage: React.FC = () => {
       showToast('success', 'Repair job updated')
       queryClient.invalidateQueries({ queryKey: ['jobs'] })
        queryClient.invalidateQueries({ queryKey: ['ledger'] })
+      queryClient.invalidateQueries({ queryKey: ['ledger-summary'] })
+      queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] })
+
       setSelectedJob(res.job)
     },
     onError: (err: any) => {
@@ -255,6 +270,9 @@ export const JobsPage: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['jobs'] })
       queryClient.invalidateQueries({ queryKey: ['inventory'] })
       queryClient.invalidateQueries({ queryKey: ['ledger'] })
+      queryClient.invalidateQueries({ queryKey: ['ledger-summary'] })
+      queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] })
+
       setSelectedJob(res.job)
       setShowAddPartForm(false)
       resetPartForm()
@@ -272,6 +290,9 @@ export const JobsPage: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['jobs'] })
       queryClient.invalidateQueries({ queryKey: ['inventory'] })
       queryClient.invalidateQueries({ queryKey: ['ledger'] })
+      queryClient.invalidateQueries({ queryKey: ['ledger-summary'] })
+      queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] })
+
       setSelectedJob(res.job)
     },
     onError: (err: any) => {
@@ -286,6 +307,9 @@ export const JobsPage: React.FC = () => {
       showToast('success', 'Job marked as DELIVERED & bill generated')
       queryClient.invalidateQueries({ queryKey: ['jobs'] })
        queryClient.invalidateQueries({ queryKey: ['ledger'] })
+      queryClient.invalidateQueries({ queryKey: ['ledger-summary'] })
+      queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] })
+
       setSelectedJob(null)
       setActiveBillJob(res.data.job)
       setActiveBusinessInfo(res.data.businessInfo || null)
@@ -302,6 +326,8 @@ export const JobsPage: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['jobs'] })
       queryClient.invalidateQueries({ queryKey: ['inventory'] })
       queryClient.invalidateQueries({ queryKey: ['ledger'] })
+      queryClient.invalidateQueries({ queryKey: ['ledger-summary'] })
+      queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] })
       setJobToDelete(null)
       if (selectedJob && selectedJob.id === jobToDelete?.id) {
         setSelectedJob(null)

@@ -34,6 +34,9 @@ export const BusinessInfoPage: React.FC = () => {
   const { data: businessData, isLoading: isBusinessLoading } = useQuery({
     queryKey: ["business-info"],
     queryFn: businessInfoApi.get,
+      refetchOnWindowFocus: false,   // don't refetch when tab regains focus
+      refetchOnReconnect: false,     // don't refetch when network reconnects
+      refetchOnMount: false,  // don't refetch when component remounts (uses cache if fresh)
   })
   const info = businessData?.data
 
@@ -64,6 +67,7 @@ export const BusinessInfoPage: React.FC = () => {
     mutationFn: (payload: UpdateBusinessInfoPayload) => businessInfoApi.update(payload),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["business-info"] })
+      
       setSaved(true)
       setTimeout(() => setSaved(false), 3000)
     },
@@ -73,6 +77,9 @@ export const BusinessInfoPage: React.FC = () => {
   const { data: accountData, isLoading: isAccountLoading } = useQuery({
     queryKey: ["account-status"],
     queryFn: accountApi.get,
+    refetchOnWindowFocus: false,   // don't refetch when tab regains focus
+      refetchOnReconnect: false,     // don't refetch when network reconnects
+      refetchOnMount: false,  // don't refetch when component remounts (uses cache if fresh)
   })
   const account = accountData?.data
 
@@ -87,7 +94,6 @@ export const BusinessInfoPage: React.FC = () => {
     dueDate: "",
     suspendReason: "",
   })
-  const [accountSaved, setAccountSaved] = useState(false)
 
   useEffect(() => {
     if (account) {
@@ -100,14 +106,7 @@ export const BusinessInfoPage: React.FC = () => {
     }
   }, [account])
 
-  const accountMutation = useMutation({
-    mutationFn: (payload: UpdateAccountPayload) => accountApi.update(payload),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["account-status"] })
-      setAccountSaved(true)
-      setTimeout(() => setAccountSaved(false), 3000)
-    },
-  })
+
 
   const checkSuspensionMutation = useMutation({
     mutationFn: () => accountApi.checkSuspension(),
@@ -125,21 +124,7 @@ export const BusinessInfoPage: React.FC = () => {
     businessMutation.mutate(form)
   }
 
-  const handleAccountSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    accountMutation.mutate({
-      name: accountForm.name,
-      status: accountForm.status,
-      dueDate: accountForm.dueDate ? accountForm.dueDate : null,
-      suspendReason: accountForm.suspendReason || null,
-    })
-  }
 
-  const handleAddDays = (days: number) => {
-    const base = accountForm.dueDate ? new Date(accountForm.dueDate) : new Date()
-    base.setDate(base.getDate() + days)
-    setAccountForm((prev) => ({ ...prev, dueDate: base.toISOString().slice(0, 10) }))
-  }
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">

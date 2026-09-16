@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import {
   Layers,
   Plus,
@@ -6,9 +6,7 @@ import {
   Edit,
   Trash2,
   Tag,
-  ChevronRight,
   X,
-  AlertTriangle,
   Sliders
 } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
@@ -16,7 +14,6 @@ import { PageHeader } from '@renderer/components/PageHeader'
 import { DataTable, Column } from '@renderer/components/DataTable'
 import { Modal } from '@renderer/components/Modal'
 import { ConfirmDialog } from '@renderer/components/ConfirmDialog'
-import { MessageDialog } from '@renderer/components/MessageDialog'
 import { useToast } from '@renderer/components/ToastProvider'
 import { categoryApi } from '@renderer/api/category'
 
@@ -30,6 +27,16 @@ interface AttributeDef {
   dependsOnValue?: string
 }
 
+interface CategoryAttribute extends AttributeDef {
+  id: string
+}
+
+interface Category {
+  id: string
+  name: string
+  attributes: CategoryAttribute[]
+}
+
 export const CategoryAndAttributes: React.FC = () => {
   const { showToast } = useToast()
   const queryClient = useQueryClient()
@@ -38,6 +45,7 @@ export const CategoryAndAttributes: React.FC = () => {
   const [editingId, setEditingId] = useState<string>('')
   const [categoryName, setCategoryName] = useState('')
   const [attributes, setAttributes] = useState<AttributeDef[]>([])
+  const [searchInput, setSearchInput] = useState('')
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
   const [limit, setLimit] = useState(15)
@@ -49,18 +57,29 @@ export const CategoryAndAttributes: React.FC = () => {
   const [optionInput, setOptionInput] = useState('')
 
   const [deletingId, setDeletingId] = useState<string>('')
-  const [messageDialog, setMessageDialog] = useState<{
-    type: 'success' | 'error' | 'warning' | 'info'
-    title: string
-    message: string
-  } | null>(null)
 
-  const { data: responseData, isLoading } = useQuery({
+  // Debounce search input -> actual query param
+  useEffect(() => {
+    const t = setTimeout(() => {
+      setSearch(searchInput)
+      setPage(1)
+    }, 600)
+    return () => clearTimeout(t)
+  }, [searchInput])
+
+  const {
+    data: responseData,
+    isLoading,
+    isError,
+    error
+  } = useQuery({
     queryKey: ['categories', search, page, limit],
-    queryFn: () => categoryApi.listCategory({ search: search || undefined, page, limit })
+    queryFn: () => categoryApi.listCategory({ search: search || undefined, page, limit }),
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false
   })
 
-  const categories = responseData?.data ?? []
+  const categories: Category[] = responseData?.data ?? []
   const pagination = responseData
     ? {
         page: responseData.page,
@@ -68,12 +87,15 @@ export const CategoryAndAttributes: React.FC = () => {
         total: responseData.total,
         totalPages: responseData.totalPages,
         onPageChange: (p: number) => setPage(p),
-        onLimitChange: (l: number) => setLimit(l)
+        onLimitChange: (l: number) => {
+          setLimit(l)
+          setPage(1)
+        }
       }
     : undefined
 
   const createCategoryMutation = useMutation({
-    mutationFn: () => categoryApi.createCategory({categoryName, attributes}),
+    mutationFn: () => categoryApi.createCategory({ categoryName, attributes }),
     onSuccess: () => {
       showToast('success', 'Category created successfully')
       queryClient.invalidateQueries({ queryKey: ['categories'] })
@@ -85,7 +107,7 @@ export const CategoryAndAttributes: React.FC = () => {
   })
 
   const updateCategoryMutation = useMutation({
-    mutationFn: () => categoryApi.updateCategory(editingId, {categoryName, attributes}),
+    mutationFn: () => categoryApi.updateCategory(editingId, { categoryName, attributes }),
     onSuccess: () => {
       showToast('success', 'Category updated successfully')
       queryClient.invalidateQueries({ queryKey: ['categories'] })
@@ -110,14 +132,14 @@ export const CategoryAndAttributes: React.FC = () => {
 
   const addOption = () => {
     const trimmed = optionInput.trim()
-    if (trimmed && !pendingOptions.includes(trimmed)) {
-      setPendingOptions(prev => [...prev, trimmed])
+    if (trimmed && !pendingOptions.some((o) => o.toLowerCase() === trimmed.toLowerCase())) {
+      setPendingOptions((prev) => [...prev, trimmed])
       setOptionInput('')
     }
   }
 
   const removeOption = (idx: number) => {
-    setPendingOptions(prev => prev.filter((_, i) => i !== idx))
+    setPendingOptions((prev) => prev.filter((_, i) => i !== idx))
   }
 
   const addAttribute = () => {
@@ -127,7 +149,7 @@ export const CategoryAndAttributes: React.FC = () => {
       inputType: attrType,
       options: attrType === 'DROPDOWN' ? pendingOptions : []
     }
-    setAttributes(prev => [...prev, newAttr])
+    setAttributes((prev) => [...prev, newAttr])
     setAttrName('')
     setAttrType('DROPDOWN')
     setPendingOptions([])
@@ -135,7 +157,7 @@ export const CategoryAndAttributes: React.FC = () => {
   }
 
   const removeAttribute = (idx: number) => {
-    setAttributes(prev => prev.filter((_, i) => i !== idx))
+    setAttributes((prev) => prev.filter((_, i) => i !== idx))
   }
 
   const clearFields = () => {
@@ -148,11 +170,11 @@ export const CategoryAndAttributes: React.FC = () => {
     setOptionInput('')
   }
 
-  const handleEdit = (cat: any) => {
+  const handleEdit = (cat: Category) => {
     setEditingId(cat.id)
     setCategoryName(cat.name)
     setAttributes(
-      cat.attributes.map((a: any) => ({
+      cat.attributes.map((a) => ({
         name: a.name,
         inputType: a.inputType,
         options: a.options || []
@@ -172,7 +194,7 @@ export const CategoryAndAttributes: React.FC = () => {
 
   const isSubmitting = createCategoryMutation.isPending || updateCategoryMutation.isPending
 
-  const columns: Column<any>[] = [
+  const columns: Column<Category>[] = [
     {
       header: 'Category Name',
       accessorKey: 'name',
@@ -190,7 +212,7 @@ export const CategoryAndAttributes: React.FC = () => {
       cell: ({ row }) => (
         <div className="flex flex-wrap gap-1.5 py-1">
           {row.attributes && row.attributes.length > 0 ? (
-            row.attributes.map((attr: any) => (
+            row.attributes.map((attr) => (
               <span
                 key={attr.id}
                 className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium bg-[var(--color-bg-primary)] border border-[var(--color-border)] text-[var(--color-text-primary)]"
@@ -259,15 +281,18 @@ export const CategoryAndAttributes: React.FC = () => {
           <input
             type="text"
             placeholder="Search categories by name..."
-            value={search}
-            onChange={(e) => {
-              setSearch(e.target.value)
-              setPage(1)
-            }}
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
             className="w-full pl-10 pr-4 py-2 bg-[var(--color-bg-primary)] border border-[var(--color-border)] rounded-lg text-sm text-white placeholder-[var(--color-text-muted)] focus:outline-none focus:border-[var(--color-accent)]"
           />
         </div>
       </div>
+
+      {isError && (
+        <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 text-sm">
+          Failed to load categories{error instanceof Error ? `: ${error.message}` : '.'} Please try again.
+        </div>
+      )}
 
       <DataTable
         columns={columns}
@@ -480,13 +505,15 @@ export const CategoryAndAttributes: React.FC = () => {
         </div>
       </Modal>
 
+      {/* DELETE CONFIRMATION DIALOG */}
       <ConfirmDialog
         isOpen={!!deletingId}
-        message="Are you sure you want to delete this category? Items under this category may be affected."
-        onConfirm={() => deleteCategoryMutation.mutate()}
         title="Delete Category"
-        isLoading={deleteCategoryMutation.isPending}
-        onClose={() => setDeletingId('')}
+        message="Are you sure you want to delete this category? Items under this category may be affected."
+        confirmLabel="Delete Category"
+        isDestructive
+        onConfirm={() => deleteCategoryMutation.mutate()}
+        onCancel={() => setDeletingId('')}
       />
     </div>
   )

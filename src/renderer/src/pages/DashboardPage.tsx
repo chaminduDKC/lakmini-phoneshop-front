@@ -37,6 +37,9 @@ const MONTH_NAMES = [
   "December"
 ]
 
+// Safe percentage helper — avoids repeating the "|| 0" / division-by-zero guard everywhere
+const pct = (part?: number, total?: number) => (total ? ((part || 0) / total) * 100 : 0)
+
 export const DashboardPage: React.FC = () => {
   const navigate = useNavigate()
 
@@ -48,11 +51,14 @@ export const DashboardPage: React.FC = () => {
     data: stats,
     isLoading,
     isRefetching,
+    isError,
+    error,
     refetch
   } = useQuery<DashboardStats>({
     queryKey: ["dashboard-stats", selectedYear, selectedMonth],
     queryFn: () => dashboardApi.getStats({ year: selectedYear, month: selectedMonth }),
-    refetchInterval: 60000
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false
   })
 
   // Format currency
@@ -61,6 +67,11 @@ export const DashboardPage: React.FC = () => {
   }
 
   const currentMonthName = MONTH_NAMES[selectedMonth - 1]
+
+  const revenuePartsPct = pct(stats?.revenue.partsSaleRevenue, stats?.revenue.totalRevenue)
+  const revenueRepairsPct = pct(stats?.revenue.repairsRevenue, stats?.revenue.totalRevenue)
+  const costStockPct = pct(stats?.cost.partsPurchaseCost, stats?.cost.totalCost)
+  const costExternalPct = pct(stats?.cost.externalPartsCost, stats?.cost.totalCost)
 
   return (
     <div className="space-y-6">
@@ -113,6 +124,21 @@ export const DashboardPage: React.FC = () => {
           </div>
         }
       />
+
+      {isError && (
+        <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 text-sm flex items-center justify-between gap-3">
+          <span>
+            Failed to load dashboard data{error instanceof Error ? `: ${error.message}` : "."} Figures below may be
+            incomplete or stale.
+          </span>
+          <button
+            onClick={() => refetch()}
+            className="shrink-0 px-2.5 py-1 rounded bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 text-xs font-semibold transition-colors"
+          >
+            Retry
+          </button>
+        </div>
+      )}
 
       {/* TOP KPI CARDS */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -280,31 +306,19 @@ export const DashboardPage: React.FC = () => {
           <div className="pt-2">
             <div className="h-2 w-full bg-[var(--color-bg-primary)] rounded-full overflow-hidden flex">
               <div
-                style={{
-                  width: `${
-                    (stats?.revenue.totalRevenue || 0) > 0
-                      ? ((stats?.revenue.partsSaleRevenue || 0) / (stats?.revenue.totalRevenue || 1)) * 100
-                      : 50
-                  }%`
-                }}
+                style={{ width: `${(stats?.revenue.totalRevenue || 0) > 0 ? revenuePartsPct : 50}%` }}
                 className="bg-emerald-500 h-full transition-all"
                 title="Parts Sales"
               />
               <div
-                style={{
-                  width: `${
-                    (stats?.revenue.totalRevenue || 0) > 0
-                      ? ((stats?.revenue.repairsRevenue || 0) / (stats?.revenue.totalRevenue || 1)) * 100
-                      : 50
-                  }%`
-                }}
+                style={{ width: `${(stats?.revenue.totalRevenue || 0) > 0 ? revenueRepairsPct : 50}%` }}
                 className="bg-cyan-500 h-full transition-all"
                 title="Repairs"
               />
             </div>
             <div className="flex justify-between text-[10px] text-[var(--color-text-muted)] mt-1.5 font-medium">
-              <span>Sales ({((stats?.revenue.totalRevenue || 0) > 0 ? ((stats?.revenue.partsSaleRevenue || 0) / stats!.revenue.totalRevenue) * 100 : 0).toFixed(0)}%)</span>
-              <span>Repairs ({((stats?.revenue.totalRevenue || 0) > 0 ? ((stats?.revenue.repairsRevenue || 0) / stats!.revenue.totalRevenue) * 100 : 0).toFixed(0)}%)</span>
+              <span>Sales ({revenuePartsPct.toFixed(0)}%)</span>
+              <span>Repairs ({revenueRepairsPct.toFixed(0)}%)</span>
             </div>
           </div>
         </div>
@@ -365,31 +379,19 @@ export const DashboardPage: React.FC = () => {
           <div className="pt-2">
             <div className="h-2 w-full bg-[var(--color-bg-primary)] rounded-full overflow-hidden flex">
               <div
-                style={{
-                  width: `${
-                    (stats?.cost.totalCost || 0) > 0
-                      ? ((stats?.cost.partsPurchaseCost || 0) / (stats?.cost.totalCost || 1)) * 100
-                      : 50
-                  }%`
-                }}
+                style={{ width: `${(stats?.cost.totalCost || 0) > 0 ? costStockPct : 50}%` }}
                 className="bg-red-500 h-full transition-all"
                 title="Stock Purchases"
               />
               <div
-                style={{
-                  width: `${
-                    (stats?.cost.totalCost || 0) > 0
-                      ? ((stats?.cost.externalPartsCost || 0) / (stats?.cost.totalCost || 1)) * 100
-                      : 50
-                  }%`
-                }}
+                style={{ width: `${(stats?.cost.totalCost || 0) > 0 ? costExternalPct : 50}%` }}
                 className="bg-orange-500 h-full transition-all"
                 title="External Parts"
               />
             </div>
             <div className="flex justify-between text-[10px] text-[var(--color-text-muted)] mt-1.5 font-medium">
-              <span>Stock ({((stats?.cost.totalCost || 0) > 0 ? ((stats?.cost.partsPurchaseCost || 0) / stats!.cost.totalCost) * 100 : 0).toFixed(0)}%)</span>
-              <span>External ({((stats?.cost.totalCost || 0) > 0 ? ((stats?.cost.externalPartsCost || 0) / stats!.cost.totalCost) * 100 : 0).toFixed(0)}%)</span>
+              <span>Stock ({costStockPct.toFixed(0)}%)</span>
+              <span>External ({costExternalPct.toFixed(0)}%)</span>
             </div>
           </div>
         </div>
@@ -712,4 +714,4 @@ export const DashboardPage: React.FC = () => {
       )}
     </div>
   )
-}
+}

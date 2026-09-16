@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import {
   Package,
   Search,
@@ -6,7 +6,6 @@ import {
   Edit,
   AlertTriangle,
   CheckCircle,
-  Tag,
   ShoppingCart
 } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
@@ -18,11 +17,17 @@ import { useToast } from '@renderer/components/ToastProvider'
 import { inventoryApi, InventoryItem } from '@renderer/api/inventory'
 import { categoryApi } from '@renderer/api/category'
 
+interface Category {
+  id: string
+  name: string
+}
+
 export const InventoryPage: React.FC = () => {
   const { showToast } = useToast()
   const queryClient = useQueryClient()
   const navigate = useNavigate()
 
+  const [searchInput, setSearchInput] = useState('')
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
   const [limit, setLimit] = useState(15)
@@ -35,13 +40,30 @@ export const InventoryPage: React.FC = () => {
   const [editReorderLevel, setEditReorderLevel] = useState('')
   const [editDescription, setEditDescription] = useState('')
 
+  // Debounce search input -> actual query param
+  useEffect(() => {
+    const t = setTimeout(() => {
+      setSearch(searchInput)
+      setPage(1)
+    }, 300)
+    return () => clearTimeout(t)
+  }, [searchInput])
+
   const { data: categoriesData } = useQuery({
     queryKey: ['categories-all'],
-    queryFn: () => categoryApi.listCategory({ all: true })
+    queryFn: () => categoryApi.listCategory({ all: true }),
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+    refetchOnMount: false // categories change rarely; cached list is fine on remount
   })
-  const categories = categoriesData?.data ?? []
+  const categories: Category[] = categoriesData?.data ?? []
 
-  const { data: responseData, isLoading } = useQuery({
+  const {
+    data: responseData,
+    isLoading,
+    isError,
+    error
+  } = useQuery({
     queryKey: ['inventory', search, filterCategoryId, page, limit],
     queryFn: () =>
       inventoryApi.listInventory({
@@ -49,7 +71,9 @@ export const InventoryPage: React.FC = () => {
         categoryId: filterCategoryId || undefined,
         page,
         limit
-      })
+      }),
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false
   })
 
   const inventory = responseData?.data ?? []
@@ -60,7 +84,10 @@ export const InventoryPage: React.FC = () => {
         total: responseData.total,
         totalPages: responseData.totalPages,
         onPageChange: (p: number) => setPage(p),
-        onLimitChange: (l: number) => setLimit(l)
+        onLimitChange: (l: number) => {
+          setLimit(l)
+          setPage(1)
+        }
       }
     : undefined
 
@@ -205,11 +232,8 @@ export const InventoryPage: React.FC = () => {
           <input
             type="text"
             placeholder="Search items by name, SKU, or category..."
-            value={search}
-            onChange={(e) => {
-              setSearch(e.target.value)
-              setPage(1)
-            }}
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
             className="w-full pl-10 pr-4 py-2 bg-[var(--color-bg-primary)] border border-[var(--color-border)] rounded-lg text-sm text-white placeholder-[var(--color-text-muted)] focus:outline-none focus:border-[var(--color-accent)]"
           />
         </div>
@@ -226,7 +250,7 @@ export const InventoryPage: React.FC = () => {
               className="bg-[var(--color-bg-primary)] border border-[var(--color-border)] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-[var(--color-accent)]"
             >
               <option value="">All Categories</option>
-              {categories.map((c: any) => (
+              {categories.map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.name}
                 </option>
@@ -235,6 +259,12 @@ export const InventoryPage: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {isError && (
+        <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 text-sm">
+          Failed to load inventory{error instanceof Error ? `: ${error.message}` : '.'} Please try again.
+        </div>
+      )}
 
       <DataTable
         columns={columns}
@@ -276,14 +306,16 @@ export const InventoryPage: React.FC = () => {
             <div className="p-3 bg-[var(--color-bg-primary)] rounded-lg border border-[var(--color-border)] grid grid-cols-2 gap-3 text-xs">
               <div>
                 <span className="text-[var(--color-text-secondary)] block mb-0.5 font-medium">Quantity in Stock</span>
-                <span className="font-bold text-white text-sm">{editingItem?.quantity} units</span>
+                <span className="font-bold text-white text-sm">{editingItem?.quantity ?? 0} units</span>
                 <span className="text-[11px] text-amber-400/90 block mt-0.5">
                   Locked (managed via Purchases / Sales / Repairs)
                 </span>
               </div>
               <div>
                 <span className="text-[var(--color-text-secondary)] block mb-0.5 font-medium">Unit Cost Price</span>
-                <span className="font-bold text-white text-sm">Rs. {Number(editingItem?.costPrice).toLocaleString()}</span>
+                <span className="font-bold text-white text-sm">
+                  Rs. {editingItem ? Number(editingItem.costPrice).toLocaleString() : '0'}
+                </span>
                 <span className="text-[11px] text-amber-400/90 block mt-0.5">
                   Locked (recorded from Purchases)
                 </span>

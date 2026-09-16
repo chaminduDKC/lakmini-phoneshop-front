@@ -136,7 +136,6 @@ export const LedgerPage: React.FC = () => {
         page,
         limit
       }),
-    refetchInterval: 30000
   })
 
   const entries = responseData?.data ?? []
@@ -156,7 +155,6 @@ export const LedgerPage: React.FC = () => {
   } = useQuery({
     queryKey: ["ledger-summary"],
     queryFn: () => ledgerApi.getLedgerSummary(),
-    refetchInterval: 30000
   })
 
   const createMutation = useMutation({
